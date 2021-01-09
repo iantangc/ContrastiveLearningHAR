@@ -179,3 +179,23 @@ def create_full_classification_model_from_base_model(base_model, output_shape, m
     )
 
     return model
+
+
+def extract_intermediate_model_from_base_model(base_model, intermediate_layer=7):
+    """
+    Create an intermediate model from base mode, which outputs embeddings of the intermediate layer
+
+    Parameters:
+        base_model
+            the base model from which the intermediate model is built
+        
+        intermediate_layer
+            the index of the intermediate layer from which the activations are extracted
+
+    Returns:
+        model (tf.keras.Model)
+    """
+
+    model = tf.keras.Model(inputs=base_model.inputs, outputs=base_model.layers[intermediate_layer].output, name=base_model.name + "_layer_" + str(intermediate_layer))
+    return model
+

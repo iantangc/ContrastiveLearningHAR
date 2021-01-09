@@ -33,7 +33,7 @@ def generate_combined_transform_function(transform_funcs, indices=[0]):
 
 
 @tf.function
-def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, normlalize=True, temperature=1.0, weights=1.0):
+def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, normalize=True, temperature=1.0, weights=1.0):
     """
     The normalised temperature-scaled cross entropy loss function of SimCLR Contrastive training
     Reference: Chen, T., Kornblith, S., Norouzi, M., & Hinton, G. (2020). A simple framework for contrastive learning of visual representations. arXiv preprint arXiv:2002.05709.
@@ -48,7 +48,7 @@ def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, norml
             the features (activations) extracted from the inputs after applying transformation 2
             e.g. model(transform_2(X))
 
-        normlalize = True
+        normalize = True
             normalise the activations if true
 
         temperature
@@ -67,7 +67,7 @@ def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, norml
     
     h1 = hidden_features_transform_1
     h2 = hidden_features_transform_2
-    if normlalize:
+    if normalize:
         h1 = tf.math.l2_normalize(h1, axis=1)
         h2 = tf.math.l2_normalize(h2, axis=1)
 
@@ -91,7 +91,7 @@ def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, norml
     return loss
 
 
-def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, normlalize=True, temperature=1.0, weights=1.0):
+def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, normalize=True, temperature=1.0, weights=1.0):
     """
     A wrapper function for the NT_Xent_loss function which facilitates back propagation
 
@@ -105,7 +105,7 @@ def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, 
         samples_transform_2
             inputs samples subject to transformation 2
 
-        normlalize = True
+        normalize = True
             normalise the activations if true
 
         temperature = 1.0
@@ -126,7 +126,7 @@ def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, 
     with tf.GradientTape() as tape:
         hidden_features_transform_1 = model(samples_transform_1)
         hidden_features_transform_2 = model(samples_transform_2)
-        loss = NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, normlalize=normlalize, temperature=temperature, weights=weights)
+        loss = NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, normalize=normalize, temperature=temperature, weights=weights)
 
     gradients = tape.gradient(loss, model.trainable_variables)
     return loss, gradients
@@ -179,11 +179,10 @@ def simclr_train_model(model, dataset, optimizer, batch_size, transformation_fun
                 list of epoch losses during training
     """
 
-
-    step_wise_loss = []
     epoch_wise_loss = []
 
     for epoch in range(epochs):
+        step_wise_loss = []
 
         # Randomly shuffle the dataset
         shuffle_indices = data_pre_processing.np_random_shuffle_index(len(dataset))
@@ -203,7 +202,7 @@ def simclr_train_model(model, dataset, optimizer, batch_size, transformation_fun
                 transform_2 = np.array([transformation_function(data) for data in data_batch])
 
             # Forward propagation
-            loss, gradients = get_NT_Xent_loss_gradients(model, transform_1, transform_2, normlalize=True, temperature=temperature, weights=1.0)
+            loss, gradients = get_NT_Xent_loss_gradients(model, transform_1, transform_2, normalize=True, temperature=temperature, weights=1.0)
 
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             step_wise_loss.append(loss)
