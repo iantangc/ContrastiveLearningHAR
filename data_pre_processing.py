@@ -314,7 +314,7 @@ def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_
     train_x, train_y, test_x, test_y = combine_windowed_dataset(user_datasets_windowed, train_users)
 
     # Step 3
-    if normalise:
+    if normalise_dataset:
         means, stds = get_mean_std_from_user_list_format(user_datasets, train_users)
         train_x = normalise(train_x, means, stds)
         test_x = normalise(test_x, means, stds)
@@ -412,7 +412,7 @@ def get_batched_dataset_generator(data, batch_size):
 
     Returns:
         generator<numpy array>
-            a batch of the data with the same shape except the first
+            a batch of the data with the same shape except the first dimension, which is now the batch size
     """
 
     num_bathes = ceiling_division(data.shape[0], batch_size)
