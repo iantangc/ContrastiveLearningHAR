@@ -1,3 +1,4 @@
+"Vectorized transformation functions for mobile sensor time series"
 import itertools
 import numpy as np
 import scipy.interpolate
@@ -6,8 +7,22 @@ __author__ = "C. I. Tang"
 __copyright__ = "Copyright (C) 2020 C. I. Tang"
 
 """
-C. I. Tang
-Vectorized transformation functions for mobile sensor time series
+Based on work of Tang et al.: https://arxiv.org/abs/2011.11542
+Contact: cit27@cl.cam.ac.uk
+License: GNU General Public License v3.0
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 An re-implemention of
 T. T. Um et al., “Data augmentation of wearable sensor data for parkinson’s disease monitoring using convolutional neural networks,” in Proceedings of the 19th ACM International Conference on Multimodal Interaction, ser. ICMI 2017. New York, NY, USA: ACM, 2017, pp. 216–220.
