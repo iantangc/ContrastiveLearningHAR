@@ -4,6 +4,12 @@ import sklearn.metrics
 
 import data_pre_processing
 
+__author__ = "C. I. Tang"
+__copyright__ = """
+Copyright (C) 2020 C. I. Tang
+This file includes software licensed under the Apache License 2.0, modified by C. I. Tang.
+"""
+
 def generate_combined_transform_function(transform_funcs, indices=[0]):
     """
     Create a composite transformation function by composing transformation functions
@@ -31,64 +37,6 @@ def generate_combined_transform_function(transform_funcs, indices=[0]):
         return sample
     return combined_transform_func
 
-
-@tf.function
-def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, normalize=True, temperature=1.0, weights=1.0):
-    """
-    The normalised temperature-scaled cross entropy loss function of SimCLR Contrastive training
-    Reference: Chen, T., Kornblith, S., Norouzi, M., & Hinton, G. (2020). A simple framework for contrastive learning of visual representations. arXiv preprint arXiv:2002.05709.
-    https://github.com/google-research/simclr/blob/master/objective.py
-
-    Parameters:
-        hidden_features_transform_1
-            the features (activations) extracted from the inputs after applying transformation 1
-            e.g. model(transform_1(X))
-        
-        hidden_features_transform_2
-            the features (activations) extracted from the inputs after applying transformation 2
-            e.g. model(transform_2(X))
-
-        normalize = True
-            normalise the activations if true
-
-        temperature
-            hyperparameter, the scaling factor of the logits
-        
-        weights
-            weights of different samples
-
-    Return:
-        loss
-            the value of the NT_Xent_loss
-    """
-    LARGE_NUM = 1e9
-    entropy_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    batch_size = tf.shape(hidden_features_transform_1)[0]
-    
-    h1 = hidden_features_transform_1
-    h2 = hidden_features_transform_2
-    if normalize:
-        h1 = tf.math.l2_normalize(h1, axis=1)
-        h2 = tf.math.l2_normalize(h2, axis=1)
-
-    labels = tf.range(batch_size)
-    masks = tf.one_hot(tf.range(batch_size), batch_size)
-    
-    logits_aa = tf.matmul(h1, h1, transpose_b=True) / temperature
-    # Suppresses the logit of the repeated sample, which is in the diagonal of logit_aa
-    # i.e. the product of h1[x] . h1[x]
-    logits_aa = logits_aa - masks * LARGE_NUM
-    logits_bb = tf.matmul(h2, h2, transpose_b=True) / temperature
-    logits_bb = logits_bb - masks * LARGE_NUM
-    logits_ab = tf.matmul(h1, h2, transpose_b=True) / temperature
-    logits_ba = tf.matmul(h2, h1, transpose_b=True) / temperature
-
-    
-    loss_a = entropy_function(labels, tf.concat([logits_ab, logits_aa], 1), sample_weight=weights)
-    loss_b = entropy_function(labels, tf.concat([logits_ba, logits_bb], 1), sample_weight=weights)
-    loss = loss_a + loss_b
-
-    return loss
 
 
 def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, normalize=True, temperature=1.0, weights=1.0):
@@ -274,3 +222,66 @@ def evaluate_model_simple(pred, truth, is_one_hot=True, return_dict=True):
         }
     else:
         return (test_cm, test_f1, test_f1_micro, test_f1_weighted, test_precision, test_recall, test_kappa)
+
+"""
+The following section of this file includes software licensed under the Apache License 2.0, by The SimCLR Authors 2020, modified by C. I. Tang.
+You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+"""
+
+@tf.function
+def NT_Xent_loss(hidden_features_transform_1, hidden_features_transform_2, normalize=True, temperature=1.0, weights=1.0):
+    """
+    The normalised temperature-scaled cross entropy loss function of SimCLR Contrastive training
+    Reference: Chen, T., Kornblith, S., Norouzi, M., & Hinton, G. (2020). A simple framework for contrastive learning of visual representations. arXiv preprint arXiv:2002.05709.
+    https://github.com/google-research/simclr/blob/master/objective.py
+
+    Parameters:
+        hidden_features_transform_1
+            the features (activations) extracted from the inputs after applying transformation 1
+            e.g. model(transform_1(X))
+        
+        hidden_features_transform_2
+            the features (activations) extracted from the inputs after applying transformation 2
+            e.g. model(transform_2(X))
+
+        normalize = True
+            normalise the activations if true
+
+        temperature
+            hyperparameter, the scaling factor of the logits
+        
+        weights
+            weights of different samples
+
+    Return:
+        loss
+            the value of the NT_Xent_loss
+    """
+    LARGE_NUM = 1e9
+    entropy_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    batch_size = tf.shape(hidden_features_transform_1)[0]
+    
+    h1 = hidden_features_transform_1
+    h2 = hidden_features_transform_2
+    if normalize:
+        h1 = tf.math.l2_normalize(h1, axis=1)
+        h2 = tf.math.l2_normalize(h2, axis=1)
+
+    labels = tf.range(batch_size)
+    masks = tf.one_hot(tf.range(batch_size), batch_size)
+    
+    logits_aa = tf.matmul(h1, h1, transpose_b=True) / temperature
+    # Suppresses the logit of the repeated sample, which is in the diagonal of logit_aa
+    # i.e. the product of h1[x] . h1[x]
+    logits_aa = logits_aa - masks * LARGE_NUM
+    logits_bb = tf.matmul(h2, h2, transpose_b=True) / temperature
+    logits_bb = logits_bb - masks * LARGE_NUM
+    logits_ab = tf.matmul(h1, h2, transpose_b=True) / temperature
+    logits_ba = tf.matmul(h2, h1, transpose_b=True) / temperature
+
+    
+    loss_a = entropy_function(labels, tf.concat([logits_ab, logits_aa], 1), sample_weight=weights)
+    loss_b = entropy_function(labels, tf.concat([logits_ba, logits_bb], 1), sample_weight=weights)
+    loss = loss_a + loss_b
+
+    return loss

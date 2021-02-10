@@ -3,6 +3,9 @@ import scipy.stats
 import sklearn.model_selection
 import tensorflow as tf
 
+__author__ = "C. I. Tang"
+__copyright__ = "Copyright (C) 2020 C. I. Tang"
+
 def get_mode(np_array):
     """
     Get the mode (majority/most frequent value) from a 1D array

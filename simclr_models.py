@@ -1,5 +1,8 @@
 import tensorflow as tf
 
+__author__ = "C. I. Tang"
+__copyright__ = "Copyright (C) 2020 C. I. Tang"
+
 def create_base_model(input_shape, model_name="base_model"):
     """
     Create the base model for activity recognition

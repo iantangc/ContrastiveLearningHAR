@@ -4,6 +4,9 @@ import os
 import pandas as pd
 import numpy as np
 
+__author__ = "C. I. Tang"
+__copyright__ = "Copyright (C) 2020 C. I. Tang"
+
 def process_motion_sense_accelerometer_files(accelerometer_data_folder_path):
     """
     Preprocess the accelerometer files of the MotionSense dataset into the 'user-list' format
