@@ -52,7 +52,7 @@ Every Python script comes with full comments, detailing what the functions do. A
 - `transformations.py`: THis file contains different functions for generating alternative views of sensor signals.
 
 # License
-The current version of this repository is released under the GNU General Public License v3.0 unless otherwise stated. The published paper is governed by a separate license and the authors retain their respective rights.
+The current version of this repository is released under the GNU General Public License v3.0 unless otherwise stated. The author of the repository retains their respective rights. The published paper is governed by a separate license and the authors retain their respective rights.
 
 # Disclaimers
 Disclaimer of Warranty.
@@ -67,3 +67,7 @@ This work made use of the MotionSense dataset available at https://github.com/mm
 The transformation functions for the time-series in this repository is based on Um et al.'s work at https://github.com/terryum/Data-Augmentation-For-Wearable-Sensor-Data.
 
 The NT-Xent Loss function is based on a implemention by The SimCLR Authors, at https://github.com/google-research/simclr.
+
+# Copyright
+
+Copyright (c) 2020 Chi Ian Tang
