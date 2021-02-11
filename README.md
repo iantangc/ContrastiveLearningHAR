@@ -36,6 +36,9 @@ Other Python standard libraries are also used.
 
 A demo implementation is provided in [`SimCLR_MotionSense.ipynb`](https://github.com/iantangc/ContrastiveLearning/blob/main/SimCLR_MotionSense.ipynb). In the demo, a HAR model is trained and evaluated on the MotionSense dataset following the settings outlined in our paper.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iantangc/ContrastiveLearning/blob/main/SimCLR_MotionSense.ipynb)
+
+
 # Results
 In our evaluation, we observed that the SimCLR framework displays promising results, slightly outperforming other fully-supervised and semi-supervised methods, which is indicative of the potential of transferring SimCLR to mobile sensing settings and other health data, especially due to the modality-agnostic nature of the method.  We also observed that the use of different transformation functions can affect the performance of the models, and in some cases, to a significant degree. 
 
