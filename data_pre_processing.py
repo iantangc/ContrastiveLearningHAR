@@ -277,7 +277,7 @@ def filter_none_label(X, y):
     valid_mask = np.where(y != None)
     return (np.array(X[valid_mask]), np.array(y[valid_mask], dtype=int))
 
-def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_users, test_users, window_size, shift, normalise_dataset=True, verbose=0):
+def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_users, test_users, window_size, shift, normalise_dataset=True, validation_split_proportion=0.2, verbose=0):
     """
     A composite function to process a dataset
     Steps
@@ -319,6 +319,11 @@ def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_
         normalise_dataset = True
             applies Z-normalisation if True
 
+        validation_split_proportion = 0.2
+            if not None, the proportion for splitting the full training set further into training and validation set using random sampling
+            (see sklearn.model_selection.train_test_split)
+            if is None, the training set will not be split - the return value np_val will also be none
+
         verbose = 0
             debug messages are printed if > 0
 
@@ -328,6 +333,8 @@ def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_
             three pairs of (X, y)
             X is a windowed set of data points
             y is an array of one-hot encoded labels
+
+            if validation_split_proportion is None, np_val is None
     """
 
     # Step 1
@@ -364,20 +371,28 @@ def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_
     train_y_one_hot = tf.keras.utils.to_categorical(train_y_mapped, num_classes=output_shape)
     test_y_one_hot = tf.keras.utils.to_categorical(test_y_mapped, num_classes=output_shape)
 
-    r = np.random.randint(100)
+    r = np.random.randint(len(train_y_mapped))
     assert train_y_one_hot[r].argmax() == train_y_mapped[r]
+    r = np.random.randint(len(test_y_mapped))
     assert test_y_one_hot[r].argmax() == test_y_mapped[r]
 
     # Step 6
-    train_x_split, val_x_split, train_y_split, val_y_split = sklearn.model_selection.train_test_split(train_x, train_y_one_hot, test_size=0.20, random_state=42)
+    if validation_split_proportion is not None and validation_split_proportion > 0:
+        train_x_split, val_x_split, train_y_split, val_y_split = sklearn.model_selection.train_test_split(train_x, train_y_one_hot, test_size=validation_split_proportion, random_state=42)
+    else:
+        train_x_split = train_x
+        train_y_split = train_y_one_hot
+        val_x_split = None
+        val_y_split = None
+        
 
     if verbose > 0:
-        print(train_x_split.shape)
-        print(val_x_split.shape)
-        print(test_x.shape)
+        print("Training data shape:", train_x_split.shape)
+        print("Validation data shape:", val_x_split.shape if val_x_split is not None else "None")
+        print("Testing data shape:", test_x.shape)
 
     np_train = (train_x_split, train_y_split)
-    np_val = (val_x_split, val_y_split)
+    np_val = (val_x_split, val_y_split) if val_x_split is not None else None
     np_test = (test_x, test_y_one_hot)
 
     # original_np_train = np_train
@@ -386,6 +401,173 @@ def pre_process_dataset_composite(user_datasets, label_map, output_shape, train_
 
     return (np_train, np_val, np_test)
 
+def pre_process_dataset_composite_in_user_format(user_datasets, label_map, output_shape, train_users, window_size, shift, normalise_dataset=True, verbose=0):
+    """
+    A composite function to process a dataset which outputs processed datasets separately for each user (of type: {user_id: ( windowed_sensor_values, windowed_activity_labels)}).
+    This is different from pre_process_dataset_composite where the data from the training and testing users are not combined into one object.
+
+    Steps
+        1: Use sliding window to make a windowed dataset (see get_windows_dataset_from_user_list_format)
+        For each user:
+            2: Apply the label map and filter labels (see apply_label_map, filter_none_label)
+            3: One-hot encode the labels (see tf.keras.utils.to_categorical)
+            4: Normalise the data (see get_mean_std_from_user_list_format)
+    
+    Parameters:
+        user_datasets
+            dataset in the 'user-list' format {user_id: [(sensor_values, activity_labels)]}
+
+        label_map
+            a mapping of the labels
+            can be used to filter labels
+            (see apply_label_map and filter_none_label)
+
+        output_shape
+            number of output classifiction categories
+            used in one hot encoding of the labels
+            (see tf.keras.utils.to_categorical)
+
+        train_users
+            list or set of users (corresponding to the user_id) to be used for normalising the dataset
+
+        window_size
+            size of the data windows
+            (see get_windows_dataset_from_user_list_format)
+
+        shift
+            number of timestamps to shift for each window
+            (see get_windows_dataset_from_user_list_format)
+
+        normalise_dataset = True
+            applies Z-normalisation if True
+
+        verbose = 0
+            debug messages are printed if > 0
+
+    
+    Return:
+        user_datasets_processed
+            Processed version of the user_datasets in the windowed format
+            type: {user_id: (windowed_sensor_values, windowed_activity_labels)}
+    """
+
+    # Preparation for step 2
+    if normalise_dataset:
+        means, stds = get_mean_std_from_user_list_format(user_datasets, train_users)
+
+    # Step 1
+    user_datasets_windowed = get_windows_dataset_from_user_list_format(user_datasets, window_size=window_size, shift=shift)
+
+    
+    user_datasets_processed = {}
+    for user, user_dataset in user_datasets_windowed.items():
+        data, labels = user_dataset
+
+        # Step 2
+        labels_mapped = apply_label_map(labels, label_map)
+        data_filtered, labels_filtered = filter_none_label(data, labels_mapped)
+
+        # Step 3
+        labels_one_hot = tf.keras.utils.to_categorical(labels_filtered, num_classes=output_shape)
+
+        # random check
+        r = np.random.randint(len(labels_filtered))
+        assert labels_one_hot[r].argmax() == labels_filtered[r]
+
+        # Step 4
+        if normalise_dataset:
+            data_filtered = normalise(data_filtered, means, stds)
+
+        user_datasets_processed[user] = (data_filtered, labels_one_hot)
+
+        if verbose > 0:
+            print("Data shape of user", user, ":", data_filtered.shape)
+    
+    return user_datasets_processed
+
+def add_user_id_to_windowed_dataset(user_datasets_windowed, encode_user_id=True, as_feature=False, as_label=True, verbose=0):
+    """
+    Add user ids as features or labels to a windowed dataset
+    The user ids are appended to the last dimension of the arrays
+    E.g. sensor values of shape (100, 400, 3) will become (100, 400, 4), and data[:, :, -1] will contain the user id
+    Similarly labels of shape (100, 5) will become (100, 6), and labels[:, -1] will contain the user id
+    
+    Parameters:
+        user_datasets_windowed
+            dataset in the 'windowed-user' format type: {user_id: (windowed_sensor_values, windowed_activity_labels)}
+
+        encode_user_id = True
+            whether to encode the user ids as integers
+            if True: 
+                encode all user ids as integers when being appended to the np arrays
+                return the map from user id to integer as an output
+                note that the dtype of the output np arrays will be kept as float if they are originally of type float
+            if False:
+                user ids will be kept as is when being appended to the np arrays
+                WARNING: if the user id is of type string, the output arrays will also be converted to type string, which might be difficult to work with
+
+        as_feature = False
+            user ids will be added to the windowed_sensor_values arrays as extra features if True
+
+        as_label = False
+            user ids will be added to the windowed_activity_labels arrays as extra labels if True
+
+        verbose = 0
+            debug messages are printed if > 0
+
+    Return:
+        user_datasets_modified, user_id_encoder
+
+            user_datasets_modified
+                the modified version of the input (user_datasets_windowed)
+                with the same type {user_id: ( windowed_sensor_values, windowed_activity_labels)}
+            user_id_encoder
+                the encoder which maps user ids to integers
+                type: {user_id: encoded_user_id}
+                None if encode_user_id is False
+    """
+
+    # Create the mapping from user_id to integers
+    if encode_user_id:
+        all_users = sorted(list(user_datasets_windowed.keys()))
+        user_id_encoder = dict([(u, i) for i, u in enumerate(all_users)])
+    else:
+        user_id_encoder = None
+
+    # if none of the options are enabled, return the input
+    if not as_feature and not as_label:
+        return user_datasets_windowed, user_id_encoder
+
+    user_datasets_modified = {}
+    for user, user_dataset in user_datasets_windowed.items():
+        data, labels = user_dataset
+
+        # Get the encoded user_id
+        if encode_user_id:
+            user_id = user_id_encoder[user]
+        else:
+            user_id = user
+
+        # Add user_id as an extra feature
+        if as_feature:
+            user_feature = np.expand_dims(np.full(data.shape[:-1], user_id), axis=-1)
+            data_modified = np.append(data, user_feature, axis=-1)
+        else:
+            data_modified = data
+        
+        # Add user_id as an extra label
+        if as_label:
+            user_labels = np.expand_dims(np.full(labels.shape[:-1], user_id), axis=-1)
+            labels_modified = np.append(labels, user_labels, axis=-1)
+        else:
+            labels_modified = labels
+
+        if verbose > 0:
+            print(f"User {user}: id {repr(user)} -> {repr(user_id)}, data shape {data.shape} -> {data_modified.shape}, labels shape {labels.shape} -> {labels_modified.shape}")
+
+        user_datasets_modified[user] = (data_modified, labels_modified)
+    
+    return user_datasets_modified, user_id_encoder
 
 def make_batches_reshape(data, batch_size):
     """

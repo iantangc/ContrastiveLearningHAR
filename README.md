@@ -1,8 +1,12 @@
 # Contrastive Learning for Human Activity Recognition
 
+![Contrastive Learning for Human Activity Recognition](./img/SimCLR_HAR.png "Contrastive Learning for Human Activity Recognition")
+
 Motivated by the limitations of labeled datasets in HAR, particularly when employed in healthcare-related applications, this work explores the adoption and adaptation of SimCLR, a contrastive learning technique for visual representations, to HAR. We have found significant differences in performance when  different transformations were applied to sensor signals, and a slight improvement upon previous state-of-the-art self-supervised learning method was shown using contrastive learning.
 
 More details can be found in our full paper: https://arxiv.org/abs/2011.11542.
+
+A poster for this study can be found [here](https://iantangc.github.io/files/ML4MH_NeurIPS_2020_Tang_Poster.pdf).
 
 This repository complements our paper, providing a reference implementation of the method as described in the paper. Please contact the authors for enquiries regarding the code.
 
@@ -40,7 +44,11 @@ A demo implementation is provided in [`SimCLR_MotionSense.ipynb`](https://github
 
 
 # Results
-In our evaluation, we observed that the SimCLR framework displays promising results, slightly outperforming other fully-supervised and semi-supervised methods, which is indicative of the potential of transferring SimCLR to mobile sensing settings and other health data, especially due to the modality-agnostic nature of the method.  We also observed that the use of different transformation functions can affect the performance of the models, and in some cases, to a significant degree. 
+In our evaluation, we used eight different transformations designed for sensor time-series.
+
+![Transformations](./img/transformations.png "Transformations")
+
+We observed that the SimCLR framework displays promising results, slightly outperforming other fully-supervised and semi-supervised methods, which is indicative of the potential of transferring SimCLR to mobile sensing settings and other health data, especially due to the modality-agnostic nature of the method.  We also observed that the use of different transformation functions can affect the performance of the models, and in some cases, to a significant degree. 
 
 ![MotionSense Results](./img/motion_sense_transform_results.png "MotionSense Results")
 
