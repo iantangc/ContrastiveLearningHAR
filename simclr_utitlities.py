@@ -28,6 +28,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+def generate_composite_transform_function_simple(transform_funcs):
+    """
+    Create a composite transformation function by composing transformation functions
+
+    Parameters:
+        transform_funcs
+            list of transformation functions
+            the function is composed by applying 
+            transform_funcs[0] -> transform_funcs[1] -> ...
+            i.e. f(x) = f3(f2(f1(x)))
+
+    Returns:
+        combined_transform_func
+            a composite transformation function
+    """
+    for i, func in enumerate(transform_funcs):
+        print(i, func)
+    def combined_transform_func(sample):
+        for func in transform_funcs:
+            sample = func(sample)
+        return sample
+    return combined_transform_func
+
 def generate_combined_transform_function(transform_funcs, indices=[0]):
     """
     Create a composite transformation function by composing transformation functions
@@ -55,6 +78,49 @@ def generate_combined_transform_function(transform_funcs, indices=[0]):
         return sample
     return combined_transform_func
 
+def generate_slicing_transform_function(transform_func_structs, slicing_axis=2, concatenate_axis=2):
+    """
+    Create a transformation function with slicing by applying different transformation functions to different slices.
+    The output arrays are then concatenated at the specified axis.
+
+    Parameters:
+        transform_func_structs
+            list of transformation function structs
+            each transformation functions struct is a 2-tuple of (indices, transform_func)
+
+            each transformation function is applied by
+                transform_func(np.take(data, indices, slicing_axis))
+            
+            all outputs are concatenated in the output axis (concatenate_axis)
+
+            Example:
+                transform_func_structs = [
+                    ([0,1,2], transformations.rotation_transform_vectorized),
+                    ([3,4,5], transformations.time_flip_transform_vectorized)
+                ]
+
+        slicing_axis = 2
+            the axis from which the slicing is applied
+            (see numpy.take)
+
+        concatenate_axis = 2
+            the axis which the transformed array (tensors) are concatenated
+            if it is None, a list will be returned
+
+    Returns:
+        slicing_transform_func
+            a slicing transformation function
+    """
+    def slicing_transform_func(sample):
+        all_slices = []
+        for indices, transform_func in transform_func_structs:
+            trasnformed_slice = transform_func(np.take(sample, indices, slicing_axis))
+            all_slices.append(trasnformed_slice)
+        if concatenate_axis is None:
+            return all_slices
+        else:
+            return np.concatenate(all_slices, axis=concatenate_axis)
+    return slicing_transform_func
 
 
 def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, normalize=True, temperature=1.0, weights=1.0):
