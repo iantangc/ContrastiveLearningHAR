@@ -165,7 +165,7 @@ def get_NT_Xent_loss_gradients(model, samples_transform_1, samples_transform_2, 
 
 
 
-def simclr_train_model(model, dataset, optimizer, batch_size, transformation_function, temperature=1.0, epochs=100, is_trasnform_function_vectorized=False, verbose=0):
+def simclr_train_model(model, dataset, optimizer, batch_size, transformation_function, temperature=1.0, epochs=100, is_trasnform_function_vectorized=False, verbose=0, is_tf_dataset=False):
     """
     Train a deep learning model using the SimCLR algorithm
 
@@ -216,12 +216,15 @@ def simclr_train_model(model, dataset, optimizer, batch_size, transformation_fun
     for epoch in range(epochs):
         step_wise_loss = []
 
-        # Randomly shuffle the dataset
-        shuffle_indices = data_pre_processing.np_random_shuffle_index(len(dataset))
-        shuffled_dataset = dataset[shuffle_indices]
+        if is_tf_dataset:
+            batched_dataset = dataset
+        else:
+            # Randomly shuffle the dataset
+            shuffle_indices = data_pre_processing.np_random_shuffle_index(len(dataset))
+            shuffled_dataset = dataset[shuffle_indices]
 
-        # Make a batched dataset
-        batched_dataset = data_pre_processing.get_batched_dataset_generator(shuffled_dataset, batch_size)
+            # Make a batched dataset
+            batched_dataset = data_pre_processing.get_batched_dataset_generator(shuffled_dataset, batch_size)
 
         for data_batch in batched_dataset:
 
